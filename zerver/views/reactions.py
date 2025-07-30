@@ -1,13 +1,16 @@
 from django.db import transaction
 from django.http import HttpRequest, HttpResponse
 from django.utils.translation import gettext as _
+from django.db.models import Count
+
+from typing import Any
 
 from zerver.actions.reactions import check_add_reaction, do_remove_reaction
 from zerver.lib.emoji import get_emoji_data
 from zerver.lib.exceptions import JsonableError, ReactionDoesNotExistError
 from zerver.lib.message import access_message
 from zerver.lib.response import json_success
-from zerver.lib.typed_endpoint import typed_endpoint
+from zerver.lib.typed_endpoint import typed_endpoint, typed_endpoint_without_parameters
 from zerver.models import Reaction, UserProfile
 
 
@@ -75,3 +78,24 @@ def remove_reaction(
     do_remove_reaction(user_profile, message, emoji_code, reaction_type)
 
     return json_success(request)
+
+
+@typed_endpoint_without_parameters
+def get_reactions(
+    request: HttpRequest,
+    user_profile: UserProfile,
+) -> HttpResponse:
+    reactions = get_reaction_data(
+        user_profile,
+    )
+    return json_success(request, data={"reactions": reactions})
+
+# Move into actions folder???
+def get_reaction_data(user_profile: UserProfile) -> list[dict[str, Any]]:
+    fields = [
+            "emoji_code",
+            "emoji_name",
+    ]
+    query = Reaction.objects.filter(user_profile_id=user_profile.id).values(*fields).annotate(count=Count("emoji_code"))
+    query = query.order_by("-count")[:6]  # Limit to top 6 reactions
+    return list(query)

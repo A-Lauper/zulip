@@ -119,7 +119,7 @@ from zerver.views.push_notifications import (
     self_hosting_registration_transfer_challenge_verify,
     send_test_push_notification_api,
 )
-from zerver.views.reactions import add_reaction, remove_reaction
+from zerver.views.reactions import add_reaction, remove_reaction, get_reactions
 from zerver.views.read_receipts import read_receipts
 from zerver.views.realm import (
     check_subdomain_available,
@@ -430,6 +430,9 @@ v1_api_and_json_patterns = [
     # POST adds a reaction to a message
     # DELETE removes a reaction from a message
     rest_path("messages/<int:message_id>/reactions", POST=add_reaction, DELETE=remove_reaction),
+    # GET retrieves all reactions for a user
+    rest_path("reactions", GET=get_reactions),
+    #rest_path("reactions/<int:user_profile_id>", GET=get_reactions),
     # read_receipts -> zerver.views.read_receipts
     rest_path("messages/<int:message_id>/read_receipts", GET=read_receipts),
     # report_message_backend -> zerver.views.message_report
