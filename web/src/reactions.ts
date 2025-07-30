@@ -16,7 +16,7 @@ import type {Message, MessageCleanReaction, RawMessage} from "./message_store.ts
 import {page_params} from "./page_params.ts";
 import * as people from "./people.ts";
 import * as spectators from "./spectators.ts";
-import {current_user} from "./state_data.ts";
+import {current_user, type CurrentUser} from "./state_data.ts";
 import {user_settings} from "./user_settings.ts";
 
 const waiting_for_server_request_ids = new Set<string>();
@@ -131,6 +131,57 @@ function update_ui_and_send_reaction_ajax(
     } else if (operation === "remove") {
         void channel.del(args);
     }
+}
+
+// this function is used to fetch the reactions for a message -- WORKING ON 
+// export to be called in another file?
+function get_frequently_used_emojis_for_user_ajax(
+    // user_id: number,    // would an input be needed here?
+): void {                  // return type? list of reactions?
+    const user_id = current_user.user_id;   // always valid when user is logged in?
+
+    // user does not exist, not logged in or failure to load user data
+    if (!people.is_valid_user_id(user_id)){      
+        // for user to have 'frequently used emojis', they need to login
+        if (page_params.is_spectator) {     
+            spectators.login_to_access();           
+            return;
+        }
+        blueslip.error("Error with validating user_id", {user_id})
+        return;
+    }
+
+    channel.get({
+        url: "/json/users/{user_id}/reactions/", // url -- add user_id for the user triggering this?
+        data: {id: user_id},  // data sent to server
+        // *** success scenario check *** 
+        success(response) {     // response returned from server -- i.e. data returned
+            // return data fetched from database to update emoji_picker
+            const emoji_data = z.object({frequently_used_emojis: z.array(z.array(z.string()))}).safeParse(response); // the schema of data returned + validation
+            // if the response is valid, we can update the emoji picker
+            if (emoji_data.success) {
+                const frequently_used_emojis = emoji_data.data.frequently_used_emojis;
+                // Update the emoji picker with the frequently used emojis
+                // where should this function be? Does this function call?
+                // Something like below?:
+                // emoji.update_frequently_used_emojis(frequently_used_emojis);
+            } else {
+                blueslip.error("Error parsing frequently used emojis response", {response});
+            }
+        },
+        error(xhr: JQuery.jqXHR) {
+            // is this what we want to handle error? 
+            if (xhr.readyState !== 0) {
+                const parsed_response = z.object({code: z.string()}).safeParse(xhr.responseJSON);
+                if (parsed_response.success && parsed_response.data.code === "NOT_LOGGED_IN") {
+                    // If the user is not logged in, we can redirect them to the login page
+                    window.location.replace(page_params.login_page);
+                } else {
+                    blueslip.error(channel.xhr_error_message("Error fetching frequently used emojis", xhr));
+                }
+            }
+        },
+    });
 }
 
 export function toggle_emoji_reaction(message: Message, emoji_name: string): void {
