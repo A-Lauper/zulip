@@ -1,11 +1,8 @@
 from django.db import transaction
 from django.http import HttpRequest, HttpResponse
 from django.utils.translation import gettext as _
-from django.db.models import Count
 
-from typing import Any
-
-from zerver.actions.reactions import check_add_reaction, do_remove_reaction
+from zerver.actions.reactions import check_add_reaction, do_remove_reaction, get_reaction_data
 from zerver.lib.emoji import get_emoji_data
 from zerver.lib.exceptions import JsonableError, ReactionDoesNotExistError
 from zerver.lib.message import access_message
@@ -90,12 +87,14 @@ def get_reactions(
     )
     return json_success(request, data={"reactions": reactions})
 
-# Move into actions folder???
-def get_reaction_data(user_profile: UserProfile) -> list[dict[str, Any]]:
-    fields = [
-            "emoji_code",
-            "emoji_name",
-    ]
-    query = Reaction.objects.filter(user_profile_id=user_profile.id).values(*fields).annotate(count=Count("emoji_code"))
-    query = query.order_by("-count")[:6]  # Limit to top 6 reactions
-    return list(query)
+# # Move into actions folder???
+# def get_reaction_data(user_profile: UserProfile) -> list[dict[str, Any]]:
+#     fields = [
+#             "emoji_code",
+#             "emoji_name",
+#     ]
+#     query = Reaction.objects.filter(user_profile_id=user_profile.id).values(*fields).annotate(count=Count("emoji_code"))
+#     query = query.order_by("-count")[:6]  # Limit to top 6 reactions
+#     print("QUERY", query.query)  # For debugging purposes, can be removed in production
+#     print("EXPLAIN ANALYZE: ", query.explain(analyze=True))
+#     return list(query.values("emoji_code", "emoji_name")) # excluede "count" from the final output

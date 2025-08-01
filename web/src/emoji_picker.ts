@@ -30,6 +30,9 @@ import {user_settings} from "./user_settings.ts";
 import * as user_status_ui from "./user_status_ui.ts";
 import * as util from "./util.ts";
 
+import * as channel from "./channel.ts";
+
+
 // The functionalities for reacting to a message with an emoji
 // and composing a message with an emoji share a single widget,
 // implemented as the emoji_popover.
@@ -143,7 +146,17 @@ function show_emoji_catalog(): void {
     search_is_active = false;
 }
 
-export function rebuild_catalog(): void {
+// export function rebuild_catalog(): void {
+//             fetch_users_top_emojis((topEmojis) => {
+export async function rebuild_catalog(): Promise<void> {
+    try {
+        // Get frequently used emojis from the refactored ajax function
+        const frequentlyUsedEmojis = await reactions.get_frequently_used_emojis_for_user_ajax();
+
+        // Convert frequentlyUsedEmojis (with emoji_code and emoji_name) into EmojiDict[]
+        // const topEmojis: EmojiDict[] = frequentlyUsedEmojis
+        //     .map(({ emoji_name }) => emoji.emojis_by_name.get(emoji_name))
+        //     .filter((emoji): emoji is EmojiDict => emoji !== undefined);
     const realm_emojis = emoji.active_realm_emojis;
 
     const catalog = new Map<string, EmojiDict[]>();
@@ -169,8 +182,31 @@ export function rebuild_catalog(): void {
         catalog.set(category, emojis);
     }
 
+
+    //console.log("Top emojis:", topEmojis);
+    // const popular = [];
+    // for (const codepoint of typeahead.popular_emojis) {
+    //     const name = emoji.get_emoji_name(codepoint);
+    //     if (name !== undefined) {
+    //         const emoji_dict = emoji.emojis_by_name.get(name);
+    //         if (emoji_dict !== undefined) {
+    //             popular.push(emoji_dict);
+    //         }
+    //     }
+    // }
+    // catalog.set("Popular", popular);
+
     const popular = [];
-    for (const codepoint of typeahead.popular_emojis) {
+    let top_emoji_codes = frequentlyUsedEmojis
+        .map((emoji_dict) => emoji_dict.emoji_code)
+        .filter((codepoint): codepoint is string => codepoint !== undefined);
+
+    // If we don't have enough top emojis, we fall back to the hardcoded popular emojis.
+    if (top_emoji_codes.length < 6) {
+        top_emoji_codes = [...typeahead.popular_emojis];
+    }
+
+    for (const codepoint of top_emoji_codes) {
         const name = emoji.get_emoji_name(codepoint);
         if (name !== undefined) {
             const emoji_dict = emoji.emojis_by_name.get(name);
@@ -180,6 +216,8 @@ export function rebuild_catalog(): void {
         }
     }
     catalog.set("Popular", popular);
+    
+   // catalog.set("Popular", topEmojis);
 
     const categories = EMOJI_CATEGORIES.filter((category) => catalog.has(category.name));
     complete_emoji_catalog = categories.map((category) => ({
@@ -197,6 +235,10 @@ export function rebuild_catalog(): void {
         return category.emojis;
     });
     composebox_typeahead.update_emoji_data(emojis_by_category);
+    }
+    catch (error) {
+        blueslip.error("Failed to rebuild emoji catalog", {error});
+    }
 }
 
 const generate_emoji_picker_content = function (id: number | null): string {
@@ -215,6 +257,74 @@ const generate_emoji_picker_content = function (id: number | null): string {
         is_status_emoji_popover: user_status_ui.user_status_picker_open(),
     });
 };
+
+// export const reaction_fetch_response_schema = z.object({
+//     id: z.string(),
+//     count: z.int(),
+//     msg: z.string(),
+// });
+
+// export const single_reaction_schema = z.object({
+//     emoji_code: z.string(),
+//     emoji_name: z.string(),
+//     count: z.number(),
+// });
+
+// export const reaction_fetch_response_schema = z.object({
+//     reactions: z.array(single_reaction_schema),
+//     msg: z.string(),
+//     result: z.string(),
+// });
+
+
+// export function fetch_users_top_emojis(): void {
+//     // This function fetches the top emojis used by users in the organization.
+//     // It is used to populate the "Popular" section of the emoji picker.
+//     channel.get({
+//         url: "/json/reactions",
+//         success(data) {
+//             const top_emojis = reaction_fetch_response_schema.parse(data).reactions.map((reaction) => {
+//                 const emoji_dict = emoji.emojis_by_name.get(reaction.id);
+//                 if (emoji_dict) {
+//                     return emoji_dict;
+//                 }
+//                 return null;
+//             }).filter((emoji) => emoji !== null) as EmojiDict[];
+//             return top_emojis;
+//             //const top_emojis = typeahead.get_top_emojis(members);
+//         },
+//         error(xhr: JQuery.jqXHR<unknown>) {
+//             console.error("Failed to fetch users", xhr);
+//         },
+//     });
+// }
+
+// export function fetch_users_top_emojis(callback: (topEmojis: EmojiDict[]) => void): void {
+//     channel.get({
+//         url: "/json/reactions",
+//         success(data) {
+//             console.log("Raw data from server:", data);
+//             const top_emojis = reaction_fetch_response_schema.parse(data).reactions
+//                 .map((reaction) => emoji.emojis_by_name.get(reaction.emoji_name))
+//                 .filter((emoji): emoji is EmojiDict => emoji !== undefined && emoji !== null);
+
+//             callback(top_emojis);
+//         },
+//         error(xhr) {
+//             console.error("Failed to fetch users", xhr);
+//         },
+//     });
+// }
+
+
+
+
+// export async function fetch_users_top_emojis(): Promise<Reaction[]> {
+//     const data = await fetch("/json/reactions").then(res => res.json());
+//     const parsed = reaction_fetch_response_schema.parse(data);
+//     return parsed.reactions;
+// }
+
 
 function refill_section_head_offsets($popover: JQuery): void {
     section_head_offsets = [];
@@ -807,6 +917,9 @@ function handle_emoji_clicked(
             break;
         }
     }
+//     fetch_users_top_emojis((topEmojis) => {
+//     console.log("Top emojis:", topEmojis);
+// });
 }
 
 function register_click_handlers(): void {
