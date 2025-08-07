@@ -9127,6 +9127,21 @@ paths:
                         }
                     ]
                   }
+        "401":
+          description: Unauthorized.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/CodedError"
+                  - example:
+                      {
+                        "result": "error",
+                        "msg": "Not logged in: API authentication or user session required",
+                        "code": "UNAUTHORIZED",
+                      }
+                    description: |
+                      User is not logged in or does not have a valid API key.
 
   /messages/render:
     post:
