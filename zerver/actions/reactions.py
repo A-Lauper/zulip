@@ -193,6 +193,7 @@ def get_reaction_data(user_profile: UserProfile) -> list[dict[str, Any]]:
     ]
     query = Reaction.objects.filter(user_profile_id=user_profile.id).values(*fields).annotate(count=Count("emoji_code"))
     query = query.order_by("-count")[:6]  # Limit to top 6 reactions
-    print("QUERY", query.query)  # For debugging purposes, can be removed in production
-    print("EXPLAIN ANALYZE: ", query.explain(analyze=True))
-    return list(query.values("emoji_code", "emoji_name")) # exclude "count" from the final output
+    # print("QUERY", query.query)  # For debugging purposes, can be removed in production
+    # print("EXPLAIN ANALYZE: ", query.explain(analyze=True))
+    return list(query.values("emoji_code")) # exclude "count" from the final output
+    #return [item["emoji_code"] for item in query] # JUST RETURN THE STRINGS???
