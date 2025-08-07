@@ -9089,13 +9089,13 @@ paths:
             application/json:
               schema:
                 allOf:
-                  - $ref: "#/components/schemas/JsonSuccessBase"
+                  - $ref: "#/components/responses/SimpleSuccess"
                   - type: object
-                    additionalProperties: true # Make true???
                     properties:
                       reactions:
                         type: array
-                        description: A list of emoji code objects.
+                        description: |
+                          A list of emoji code objects.
                         items:
                           type: object
                           properties:
