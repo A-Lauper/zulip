@@ -59,7 +59,7 @@ let edit_message_id: number | null = null;
 let current_message_id: number | null = null;
 
 const EMOJI_CATEGORIES = [
-    {name: "Popular", icon: "fa-star-o", translated: $t({defaultMessage: "Popular"})},
+    {name: "Frequently used", icon: "fa-star-o", translated: $t({defaultMessage: "Frequently used"})},
     {
         name: "Smileys & Emotion",
         icon: "fa-smile-o",
@@ -143,7 +143,10 @@ function show_emoji_catalog(): void {
     search_is_active = false;
 }
 
-export function rebuild_catalog(): void {
+export async function rebuild_catalog(): Promise<void> {
+    try {
+        // Get frequently used emojis from the refactored ajax function
+        const frequentlyUsedEmojis = await reactions.get_frequently_used_emojis_for_user_ajax();
     const realm_emojis = emoji.active_realm_emojis;
 
     const catalog = new Map<string, EmojiDict[]>();
@@ -169,17 +172,26 @@ export function rebuild_catalog(): void {
         catalog.set(category, emojis);
     }
 
-    const popular = [];
-    for (const codepoint of typeahead.popular_emojis) {
+    const frequently_used = [];
+    let top_emoji_codes = frequentlyUsedEmojis
+        .map((emoji_dict) => emoji_dict.emoji_code)
+        .filter((codepoint): codepoint is string => codepoint !== undefined);
+
+    // If we don't have enough top emojis, we fall back to the hardcoded popular emojis.
+    if (top_emoji_codes.length < 6) {
+        top_emoji_codes = [...typeahead.popular_emojis];
+    }
+
+    for (const codepoint of top_emoji_codes) {
         const name = emoji.get_emoji_name(codepoint);
         if (name !== undefined) {
             const emoji_dict = emoji.emojis_by_name.get(name);
             if (emoji_dict !== undefined) {
-                popular.push(emoji_dict);
+                frequently_used.push(emoji_dict);
             }
         }
     }
-    catalog.set("Popular", popular);
+    catalog.set("Frequently used", frequently_used);
 
     const categories = EMOJI_CATEGORIES.filter((category) => catalog.has(category.name));
     complete_emoji_catalog = categories.map((category) => ({
@@ -190,13 +202,17 @@ export function rebuild_catalog(): void {
         translated: category.translated,
     }));
     const emojis_by_category = complete_emoji_catalog.flatMap((category) => {
-        if (category.name === "Popular") {
-            // popular category has repeated emojis in the catalog so we skip it
+        if (category.name === "Frequently used") {
+            // frequently used category has repeated emojis in the catalog so we skip it
             return [];
         }
         return category.emojis;
     });
     composebox_typeahead.update_emoji_data(emojis_by_category);
+    }
+    catch (error) {
+        blueslip.error("Failed to rebuild emoji catalog", {error});
+    }
 }
 
 const generate_emoji_picker_content = function (id: number | null): string {
@@ -280,7 +296,7 @@ function filter_emojis(): void {
         search_results.length = 0;
 
         for (const category of categories) {
-            if (category.name === "Popular") {
+            if (category.name === "Frequently used") {
                 continue;
             }
             const emojis = category.emojis;
@@ -622,9 +638,9 @@ export function emoji_select_tab($elt: JQuery): void {
         // Handles the corner case where the refill_section_head_offsets()
         // is still running and section_head_offset[] is still empty,
         // scroll events in the middle may attempt to access section_head_offset[]
-        // causing exception. In this situation the currently_selected is hardcoded as "Popular".
+        // causing exception. In this situation the currently_selected is hardcoded as "Frequently used".
         if (section_head_offsets.length === 0) {
-            currently_selected = "Popular";
+            currently_selected = "Frequently used";
         } else {
             currently_selected = section_head_offsets[0]!.section;
         }
