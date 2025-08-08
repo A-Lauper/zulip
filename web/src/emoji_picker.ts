@@ -143,7 +143,10 @@ function show_emoji_catalog(): void {
     search_is_active = false;
 }
 
-export function rebuild_catalog(): void {
+export async function rebuild_catalog(): Promise<void> {
+    try {
+        // Get frequently used emojis from the refactored ajax function
+        const frequentlyUsedEmojis = await reactions.get_frequently_used_emojis_for_user_ajax();
     const realm_emojis = emoji.active_realm_emojis;
 
     const catalog = new Map<string, EmojiDict[]>();
@@ -170,7 +173,16 @@ export function rebuild_catalog(): void {
     }
 
     const popular = [];
-    for (const codepoint of typeahead.popular_emojis) {
+    let top_emoji_codes = frequentlyUsedEmojis
+        .map((emoji_dict) => emoji_dict.emoji_code)
+        .filter((codepoint): codepoint is string => codepoint !== undefined);
+
+    // If we don't have enough top emojis, we fall back to the hardcoded popular emojis.
+    if (top_emoji_codes.length < 6) {
+        top_emoji_codes = [...typeahead.popular_emojis];
+    }
+
+    for (const codepoint of top_emoji_codes) {
         const name = emoji.get_emoji_name(codepoint);
         if (name !== undefined) {
             const emoji_dict = emoji.emojis_by_name.get(name);
@@ -197,6 +209,10 @@ export function rebuild_catalog(): void {
         return category.emojis;
     });
     composebox_typeahead.update_emoji_data(emojis_by_category);
+    }
+    catch (error) {
+        blueslip.error("Failed to rebuild emoji catalog", {error});
+    }
 }
 
 const generate_emoji_picker_content = function (id: number | null): string {
