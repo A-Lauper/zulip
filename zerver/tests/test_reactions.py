@@ -1,3 +1,4 @@
+import json
 from typing import TYPE_CHECKING, Any
 from unittest import mock
 
@@ -238,7 +239,122 @@ class ReactionEmojiTest(ZulipTestCase):
         with self.assertRaises(JsonableError) as exc:
             get_emoji_data(realm.id, "invalid_emoji")
         self.assertEqual(str(exc.exception), "Emoji 'invalid_emoji' does not exist")
+    
+    # def test_get_frequent_emojis(self) -> None:
+    #     """
+    #     Get user recent emoji reactions
+    #     """
+    #     # Test without logging in
+    #     result = self.client_get("/json/reactions")
+    #     self.assert_json_error(result, "Not logged in: API authentication or user session required", 401)
 
+    #     # Logging in
+    #     sender = self.example_user("hamlet")
+    #     self.login_user(sender)
+
+    #     # Test with logged in user
+    #     result = self.client_get("/json/reactions")
+    #     self.assert_json_success(result)
+
+    #     print("RESULTING CONTENT: ", result.content)
+    #     data = json.loads(result.content)
+    #     expected_reactions = [
+    #                             {"emoji_code":"1f4af"},
+    #                             {"emoji_code":"2b06"},
+    #                             {"emoji_code":"1f440"},
+    #                             {"emoji_code":"1f603"}
+    #                           ]
+        
+    #     # Verify expected results
+    #     self.assertEqual(len(data["reactions"]), 4)
+    #     self.assertEqual(data["reactions"], expected_reactions)
+
+class GetReactionEmojiTest(ZulipTestCase):
+    # @override
+    # def set_up(self) -> None:
+    #     sender = self.example_user("hamlet")
+    #     sender.recent_emoji_reaction_history = [
+    #         {"emoji_code": "1f604", "emoji_name": "smile"},
+    #         {"emoji_code": "2705", "emoji_name": "green_tick"}
+    #     ]
+    #     sender.save()
+    def test_get_frequent_emojis(self) -> None:
+        """
+        Get user recent emoji reactions
+        """
+        # Test without logging in
+        result = self.client_get("/json/reactions")
+        self.assert_json_error(result, "Not logged in: API authentication or user session required", 401)
+
+        # Logging in
+        sender = self.example_user("hamlet")
+        self.login_user(sender)
+
+        # Add reactions for different frequencies
+        self.add_reaction(sender, 1, "100")
+
+        self.add_reaction(sender, 2, "100")
+        self.add_reaction(sender, 2, "up")
+
+        self.add_reaction(sender, 3, "100")
+        self.add_reaction(sender, 3, "up")
+        self.add_reaction(sender, 3, "eyes")
+
+        self.add_reaction(sender, 4, "100")
+        self.add_reaction(sender, 4, "up")
+        self.add_reaction(sender, 4, "eyes")
+        self.add_reaction(sender, 4, "smile")
+
+        self.add_reaction(sender, 5, "100")
+        self.add_reaction(sender, 5, "up")
+        self.add_reaction(sender, 5, "eyes")
+        self.add_reaction(sender, 5, "smile")
+        self.add_reaction(sender, 5, "dog")
+
+        self.add_reaction(sender, 6, "100")
+        self.add_reaction(sender, 6, "up")
+        self.add_reaction(sender, 6, "eyes")
+        self.add_reaction(sender, 6, "smile")
+        self.add_reaction(sender, 6, "dog")
+        self.add_reaction(sender, 6, "+1")
+
+        self.add_reaction(sender, 7, "100")
+        self.add_reaction(sender, 7, "up")
+        self.add_reaction(sender, 7, "eyes")
+        self.add_reaction(sender, 7, "smile")
+        self.add_reaction(sender, 7, "dog")
+        self.add_reaction(sender, 7, "+1")
+        self.add_reaction(sender, 7, "ok") # Not included because frequent list limit of 6
+
+        # Test with logged in user
+        result = self.client_get("/json/reactions")
+        self.assert_json_success(result)
+
+        print("RESULTING CONTENT: ", result.content)
+        data = json.loads(result.content)
+        expected_reactions = [
+                                {"emoji_code":"1f4af"},  # 100
+                                {"emoji_code":"2b06"},   # up
+                                {"emoji_code":"1f440"},  # eyes
+                                {"emoji_code":"1f604"},  # smile
+                                {"emoji_code":"1f415"},  # dog
+                                {"emoji_code":"1f44d"}   # +1
+                              ]
+        
+        # Verify expected results
+        self.assertEqual(len(data["reactions"]), 6)
+        self.assertEqual(data["reactions"], expected_reactions)
+    
+    def add_reaction(self, sender, message_id, emoji_name) -> None:
+        """
+        Helper function to add a reaction for testing.
+        """
+        reaction_info = {
+            "emoji_name": emoji_name,
+        }
+        result = self.api_post(sender, f"/api/v1/messages/{message_id}/reactions", reaction_info)
+        self.assert_json_success(result)
+        self.assertEqual(200, result.status_code)
 
 class ReactionMessageIDTest(ZulipTestCase):
     def test_missing_message_id(self) -> None:
