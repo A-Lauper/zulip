@@ -8,6 +8,7 @@
 * [Construct a narrow](/api/construct-narrow)
 * [Add an emoji reaction](/api/add-reaction)
 * [Remove an emoji reaction](/api/remove-reaction)
+* [Get users top 6 used reaction](/api/get-frequently-used-emojis)
 * [Render a message](/api/render-message)
 * [Fetch a single message](/api/get-message)
 * [Check if messages match a narrow](/api/check-messages-match-narrow)
