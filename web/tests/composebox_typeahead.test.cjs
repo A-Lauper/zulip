@@ -10,7 +10,7 @@ const example_settings = require("./lib/example_settings.cjs");
 const {mock_esm, set_global, with_overrides, zrequire} = require("./lib/namespace.cjs");
 const {run_test, noop} = require("./lib/test.cjs");
 const $ = require("./lib/zjquery.cjs");
-
+const blueslip = require("./lib/zblueslip.cjs");
 let autosize_called;
 const REALM_EMPTY_TOPIC_DISPLAY_NAME = "general chat";
 
@@ -304,7 +304,15 @@ emoji.emojis_by_name.clear();
 for (const [key, val] of emojis_by_name.entries()) {
     emoji.emojis_by_name.set(key, val);
 }
-emoji_picker.rebuild_catalog();
+//blueslip.expect("error", "Failed to rebuild emoji catalog");
+run_test("initialize", async () => {
+    blueslip.expect("error", "Failed to rebuild emoji catalog");
+    await emoji_picker.rebuild_catalog();
+    //await new Promise((r) => setTimeout(r, 100));
+});
+
+// await emoji_picker.rebuild_catalog();
+// await new Promise((r) => setTimeout(r, 100));
 const emoji_list = composebox_typeahead.emoji_collection.map((emoji) => ({
     ...emoji,
     type: "emoji",

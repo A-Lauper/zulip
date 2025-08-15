@@ -11,16 +11,18 @@ const emoji = zrequire("emoji");
 const emoji_picker = zrequire("emoji_picker");
 
 const emoji_codes = zrequire("../../static/generated/emoji/emoji_codes.json");
-
+const blueslip = require("./lib/zblueslip.cjs");
 set_global("document", "document-stub");
 
-run_test("initialize", () => {
+run_test("initialize", async () => {
     emoji.initialize({
         realm_emoji: {},
         emoji_codes,
     });
-    emoji_picker.initialize();
+    blueslip.expect("error", "Failed to rebuild emoji catalog");
 
+    await emoji_picker.initialize();
+    await new Promise((r) => setTimeout(r, 100));
     const complete_emoji_catalog = _.sortBy(emoji_picker.complete_emoji_catalog, "name");
     assert.equal(complete_emoji_catalog.length, 11);
     assert.equal(emoji.emojis_by_name.size, 1876);

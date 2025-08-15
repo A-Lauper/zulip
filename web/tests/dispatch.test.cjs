@@ -870,6 +870,7 @@ run_test("realm_emoji", ({override}) => {
     emoji.update_emojis([]);
     assert.equal(emoji.get_realm_emoji_url("spain"), undefined);
 
+    // blueslip.expect("error", "Error with validating user_id");
     dispatch(event);
 
     // Now emoji.js knows about the spain emoji.
