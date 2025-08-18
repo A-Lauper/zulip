@@ -19,7 +19,7 @@ run_test("initialize", async () => {
         realm_emoji: {},
         emoji_codes,
     });
-    blueslip.expect("error", "Failed to rebuild emoji catalog");
+    //blueslip.expect("error", "Failed to rebuild emoji catalog");
 
     await emoji_picker.initialize();
     await new Promise((r) => setTimeout(r, 100));

@@ -150,7 +150,10 @@ function show_emoji_catalog(): void {
 export async function rebuild_catalog(): Promise<void> {
     try {
         // Get frequently used emojis from the refactored ajax function
-        const frequentlyUsedEmojis = await reactions.get_frequently_used_emojis_for_user_ajax();
+        let frequentlyUsedEmojis = null;
+        if (page_params.is_authenticated){
+            frequentlyUsedEmojis = await reactions.get_frequently_used_emojis_for_user_ajax();
+        }
         const realm_emojis = emoji.active_realm_emojis;
 
         const catalog = new Map<string, EmojiDict[]>();
@@ -177,24 +180,38 @@ export async function rebuild_catalog(): Promise<void> {
         }
 
         const frequently_used = [];
-        let top_emoji_codes = frequentlyUsedEmojis
-            .map((emoji_dict) => emoji_dict.emoji_code)
-            .filter((codepoint): codepoint is string => codepoint !== undefined);
+        if (frequentlyUsedEmojis != null) {
+            let top_emoji_codes = frequentlyUsedEmojis
+                .map((emoji_dict) => emoji_dict.emoji_code)
+                .filter((codepoint): codepoint is string => codepoint !== undefined);
 
-        // If we don't have enough top emojis, we fall back to the hardcoded popular emojis.
-        if (top_emoji_codes.length < 6) {
-            top_emoji_codes = [...typeahead.popular_emojis];
-        }
+            // If we don't have enough top emojis, we fall back to the hardcoded popular emojis.
+            if (top_emoji_codes.length < 6) {
+                top_emoji_codes = [...typeahead.popular_emojis];
+            }
 
-        for (const codepoint of top_emoji_codes) {
-            const name = emoji.get_emoji_name(codepoint);
-            if (name !== undefined) {
-                const emoji_dict = emoji.emojis_by_name.get(name);
-                if (emoji_dict !== undefined) {
-                    frequently_used.push(emoji_dict);
+            for (const codepoint of top_emoji_codes) {
+                const name = emoji.get_emoji_name(codepoint);
+                if (name !== undefined) {
+                    const emoji_dict = emoji.emojis_by_name.get(name);
+                    if (emoji_dict !== undefined) {
+                        frequently_used.push(emoji_dict);
+                    }
                 }
             }
-        }
+    } else {
+            let top_emoji_codes = [...typeahead.popular_emojis];
+
+            for (const codepoint of top_emoji_codes) {
+                const name = emoji.get_emoji_name(codepoint);
+                if (name !== undefined) {
+                    const emoji_dict = emoji.emojis_by_name.get(name);
+                    if (emoji_dict !== undefined) {
+                        frequently_used.push(emoji_dict);
+                    }
+                }
+            }
+    }
         catalog.set("Frequently used", frequently_used);
 
         const categories = EMOJI_CATEGORIES.filter((category) => catalog.has(category.name));
