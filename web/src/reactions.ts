@@ -135,20 +135,25 @@ function update_ui_and_send_reaction_ajax(
 
 export async function get_frequently_used_emojis_for_user_ajax(): Promise<{emoji_code: string}[]> {
     return new Promise((resolve, reject) => {
+        console.log(10);
+        console.log("CURRENT USER ", current_user.user_id);
         const user_id = current_user.user_id;
 
         // Only valid, logged-in users can access this feature
         if (!people.is_valid_user_id(user_id)) {
+            console.log(11);
             if (page_params.is_spectator) {
+                console.log(12);
                 spectators.login_to_access();
                 reject(new Error("User is a spectator, needs login"));
                 return;
             }
+            console.log(13);
             blueslip.error("Error with validating user_id", {user_id});
             reject(new Error("Invalid user_id"));
             return;
         }
-
+console.log(14);
         channel.get({
             url: "/json/reactions",
             success(response) {

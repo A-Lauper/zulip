@@ -11,10 +11,59 @@ const emoji = zrequire("emoji");
 const emoji_picker = zrequire("emoji_picker");
 
 const emoji_codes = zrequire("../../static/generated/emoji/emoji_codes.json");
-const blueslip = require("./lib/zblueslip.cjs");
-set_global("document", "document-stub");
+//const blueslip = require("./lib/zblueslip.cjs");
+const people = zrequire("people");
+const {make_user} = require("./lib/example_user.cjs");
+const {set_current_user} = zrequire("state_data");
+people.init(); // Sometimes necessary to reset state for each test
 
+const user = make_user({
+        user_id: 22,
+        email: "alice@example.com",
+        full_name: "Alice",
+    });
+people.add_active_user(user);
+
+
+set_current_user(user);
+
+people.add_valid_user_id(user.user_id);
+
+const {JSDOM} = require("jsdom");
+const {window} = new JSDOM("", {url: "https://localhost:9991/"});
+set_global("window", window);
+set_global("document", window.document);
+// set_global("node", window.Node);
+// set_global("HTMLAnchorElement", window.HTMLAnchorElement);
+
+
+
+
+// const reactions = zrequire("reactions");
+// reactions.get_frequently_used_emojis_for_user_ajax = function () {
+//     return Promise.resolve(["grinning", "thumbsup", "heart_eyes"]);
+// };
+
+
+
+// const $ = require("./lib/zjquery.cjs");
+// set_global("$", $);
+
+// override($,ajax,(options) => {
+//     if (options && typeof options.success === "function") {
+//         options.success({reactions: []});
+//     }
+//     return {
+//         readyState: 4,
+//         status: 200,
+//         responseJSON: {reactions: []},
+//     };
+// });
+
+
+//window.location.href = "https://localhost:9991/";
 run_test("initialize", async () => {
+    console.log("Initializing emoji...", user.user_id);
     emoji.initialize({
         realm_emoji: {},
         emoji_codes,
