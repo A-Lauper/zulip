@@ -4,7 +4,7 @@ const assert = require("node:assert/strict");
 
 const _ = require("lodash");
 
-const {zrequire, set_global} = require("./lib/namespace.cjs");
+const {zrequire, set_global, mock_esm} = require("./lib/namespace.cjs");
 const {run_test} = require("./lib/test.cjs");
 
 const emoji = zrequire("emoji");
@@ -29,14 +29,34 @@ set_current_user(user);
 
 people.add_valid_user_id(user.user_id);
 
-const {JSDOM} = require("jsdom");
-const {window} = new JSDOM("", {url: "https://localhost:9991/"});
-set_global("window", window);
-set_global("document", window.document);
+const reactions = mock_esm("../../web/src/reactions", {
+    get_frequently_used_emojis_for_user_ajax: () => Promise.resolve(["grinning", "thumbsup", "heart_eyes"]),
+});
+
+// then maybe further down
+//reactions.get_frequently_used_emojis_for_user_ajax = () => Promise.resolve(["grinning", "thumbsup", "heart_eyes"]);
+
+// // Import real code.
+// const reactions = zrequire('reactions');
+
+// // And later...
+// reactions.get_frequently_used_emojis_for_user_ajax = function () {
+//     return Promise.resolve(["grinning", "thumbsup", "heart_eyes"]);
+// };
+
+// const {JSDOM} = require("jsdom");
+// const {window} = new JSDOM("", {url: "https://localhost:9991/"});
+// set_global("window", window);
+// set_global("document", window.document);
 // set_global("node", window.Node);
 // set_global("HTMLAnchorElement", window.HTMLAnchorElement);
 
+// const reminder = mock_esm("../../web/src/reminder", {
+//     is_deferred_delivery: noop,
+// });
 
+// // then maybe further down
+// reminder.is_deferred_delivery = () => true;
 
 
 // const reactions = zrequire("reactions");
