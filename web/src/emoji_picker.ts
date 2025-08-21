@@ -152,7 +152,7 @@ export async function rebuild_catalog(): Promise<void> {
         // Get frequently used emojis from the refactored ajax function
         console.log("1");
         let frequentlyUsedEmojis = null;
-        if (!page_params.is_spectator){
+        if (!page_params.is_spectator) {
             console.log("2");
             frequentlyUsedEmojis = await reactions.get_frequently_used_emojis_for_user_ajax();
         }
@@ -183,7 +183,7 @@ export async function rebuild_catalog(): Promise<void> {
         }
 
         const frequently_used = [];
-        if (frequentlyUsedEmojis != null) {
+        if (frequentlyUsedEmojis !== null) {
             console.log("4");
             let top_emoji_codes = frequentlyUsedEmojis
                 .map((emoji_dict) => emoji_dict.emoji_code)
@@ -203,9 +203,9 @@ export async function rebuild_catalog(): Promise<void> {
                     }
                 }
             }
-    } else {
-        console.log("5");
-            let top_emoji_codes = [...typeahead.popular_emojis];
+        } else {
+            console.log("5");
+            const top_emoji_codes = [...typeahead.popular_emojis];
 
             for (const codepoint of top_emoji_codes) {
                 const name = emoji.get_emoji_name(codepoint);
@@ -216,7 +216,7 @@ export async function rebuild_catalog(): Promise<void> {
                     }
                 }
             }
-    }
+        }
         catalog.set("Frequently used", frequently_used);
 
         const categories = EMOJI_CATEGORIES.filter((category) => catalog.has(category.name));
@@ -236,7 +236,7 @@ export async function rebuild_catalog(): Promise<void> {
         });
         composebox_typeahead.update_emoji_data(emojis_by_category);
     } catch (error) {
-        console.log("error", error)
+        console.log("error", error);
         blueslip.error("Failed to rebuild emoji catalog", {error});
     }
 }

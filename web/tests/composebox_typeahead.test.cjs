@@ -1,5 +1,7 @@
 "use strict";
+
 const {page_params} = require("./lib/zpage_params.cjs");
+
 page_params.is_spectator = true;
 
 const assert = require("node:assert/strict");

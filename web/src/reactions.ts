@@ -136,7 +136,7 @@ function update_ui_and_send_reaction_ajax(
 export async function get_frequently_used_emojis_for_user_ajax(): Promise<{emoji_code: string}[]> {
     return new Promise((resolve, reject) => {
         console.log(10);
-        console.log("CURRENT USER ", current_user.user_id);
+        console.log("CURRENT USER", current_user.user_id);
         const user_id = current_user.user_id;
 
         // Only valid, logged-in users can access this feature
@@ -153,7 +153,7 @@ export async function get_frequently_used_emojis_for_user_ajax(): Promise<{emoji
             reject(new Error("Invalid user_id"));
             return;
         }
-console.log(14);
+        console.log(14);
         channel.get({
             url: "/json/reactions",
             success(response) {
